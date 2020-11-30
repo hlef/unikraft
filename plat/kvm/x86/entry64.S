@@ -227,6 +227,15 @@ noxsave:
 	orl $(X86_CR4_FSGSBASE), %edi
 	movq %rdi, %cr4
 nofsgsbase:
+#if CONFIG_HAVE_X86PKU
+	/* check for Intel Memory Protection Keys (PKU) */
+	testl $(X86_CPUID7_ECX_PKU), %ecx
+	/* if PKU is not supported, stop the boot process */
+	jz halt
+	/* if PKU is supported, enable it via CR4 */
+	orl $(X86_CR4_PKE), %edi
+	movq %rdi, %cr4
+#endif /* CONFIG_HAVE_X86PKU */
 	/* done setting up CPU capabilities */
 
 	/* read multiboot info pointer */
@@ -234,6 +243,7 @@ nofsgsbase:
 
 	call _libkvmplat_entry
 
+halt:
 	cli
 	hlt
 END(_libkvmplat_start64)
